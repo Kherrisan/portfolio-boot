@@ -1,4 +1,3 @@
-
 const CACHE_NAME = 'kendrickzou-portfolio-cache';
 const DEFAULT_VERSION = '1.0.0'
 const DOMAINS = ["kendrickzou.com", "kherrisan.github.io", "localhost"]
@@ -98,7 +97,8 @@ const fetchParallellyAndCache = async (urls, req) => {
 const handle = async function (req) {
     let url = new URL(req.url)
     if (!DOMAINS.includes(url.hostname)
-        || url.pathname.match(/\/sw\.js/g)) {
+        || url.pathname.match(/\/sw\.js/g)
+        || url.pathname === '/') {
         return fetch(req)
     }
     let urls
@@ -110,7 +110,7 @@ const handle = async function (req) {
         urls = cdnList.map(cdn => cdnUrl.split('&')[0].replace(DEFAULT_IMG_CDN, cdn).replace(imgName, transImgName))
     } else {
         const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
-        urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}${url.searchParams}`)
+        urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}?${url.searchParams}`)
     }
     const resp = await caches.match(req)
     if (!!resp) {
