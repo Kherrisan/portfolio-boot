@@ -1,7 +1,7 @@
 
 const CACHE_NAME = 'kendrickzou-portfolio-cache';
 const DEFAULT_VERSION = '1.0.0'
-const DOMAINS = ["kendrickzou.com", "localhost"]
+const DOMAINS = ["kendrickzou.com", "kherrisan.github.io", "localhost"]
 const PORTFOLIO_PACKAGE_NAME = "kendrickzou-portfolio"
 const PORTFOLIO_IMG_PACKAGE_NAME = "kendrickzou-portfolio-img"
 const VERSION_STORAGE_KEY = "kendrickzou-portfolio-version"
@@ -102,18 +102,15 @@ const handle = async function (req) {
         return fetch(req)
     }
     let urls
-    if (url.pathname.match(/_next\/static/g)) {
-        url.pathname = url.pathname.replace(/_next\/static\//, "")
-        const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
-        urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}${url.searchParams}`)
-    } else if (url.pathname.match(/_next\/image/g)) {
+    if (url.pathname.match(/_next\/image/g)) {
         const cdnUrl = decodeURIComponent(url.href.match(/url=(.+?)$/).at(1)).split('&')[0]
         const imgName = cdnUrl.match(/[\w-]+\.(jpg|png|jpeg|webp|heic|avif)/g)[0]
         const width = url.href.split(/[&=]/)[3]
         const transImgName = `${imgName.split('.')[0]}-${width}.${imgName.split('.')[1]}`
         urls = cdnList.map(cdn => cdnUrl.split('&')[0].replace(DEFAULT_IMG_CDN, cdn).replace(imgName, transImgName))
     } else {
-        return fetch(req)
+        const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
+        urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}${url.searchParams}`)
     }
     const resp = await caches.match(req)
     if (!!resp) {
