@@ -94,11 +94,21 @@ const fetchParallellyAndCache = async (urls, req) => {
     return resp
 }
 
+const fullpath = (path) => {
+    path = path.split('?')[0].split('#')[0]
+    if (path.match(/\/$/)) {
+        path += 'index'
+    }
+    if (!path.match(/\.[a-zA-Z]+$/)) {
+        path += '.html'
+    }
+    return path
+}
+
 const handle = async function (req) {
-    let url = new URL(req.url)
+    let url = new URL(fullpath(req.url))
     if (!DOMAINS.includes(url.hostname)
-        || url.pathname.match(/\/sw\.js/g)
-        || url.pathname === '/') {
+        || url.pathname.match(/\/sw\.js/g)) {
         return fetch(req)
     }
     let urls
@@ -110,7 +120,7 @@ const handle = async function (req) {
         urls = cdnList.map(cdn => cdnUrl.split('&')[0].replace(DEFAULT_IMG_CDN, cdn).replace(imgName, transImgName))
     } else {
         const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
-        urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}?${url.searchParams}`)
+        urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}`)
     }
     const resp = await caches.match(req)
     if (!!resp) {
