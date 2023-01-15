@@ -61,7 +61,7 @@ self.addEventListener('install', async function (installEvent) {
     );
 });
 
-self.addEventListener('fetch', async event => {
+self.addEventListener('fetch', event => {
     try {
         event.respondWith(handle(event.request))
     } catch (msg) {
@@ -88,7 +88,7 @@ const timeout = (ms) => {
 }
 
 const fetchParallellyAndCache = async (urls, req) => {
-    const resp = await fetchParallelly(urls)
+    const resp = await fetchParallelly(urls, req)
     const cache = await caches.open(CACHE_NAME)
     cache.put(req, resp.clone())
     return resp
@@ -117,7 +117,7 @@ const handle = async function (req) {
     if (url.pathname.match(/^\/api\//g)) {
         // replace 'localhost:3000' or 'kendrickzou.com' with 'api.kendrickzou.com'
         const apiUrl = url.href.replace(url.host, 'api.kendrickzou.com')
-        return fetch(new Request(apiUrl), {mode: 'no-cors'})
+        return fetch(new Request(apiUrl), { mode: 'no-cors' })
     }
     let urls
     if (url.pathname.match(/_next\/image/g)) {
@@ -135,14 +135,13 @@ const handle = async function (req) {
     return fetchParallellyAndCache(urls, req)
 }
 
-const fetchParallelly = async (urls) => {
+const fetchParallelly = async (urls, req) => {
     cons.i(`Fetch parallelly: ${urls[0]}......`)
     let controller = new AbortController(); //针对此次请求新建一个AbortController,用于打断并发的其余请求
     const PauseProgress = async (res) => {
         //这个函数的作用时阻塞响应,直到主体被完整下载,避免被提前打断
-        const status = res.status;
-        const headers = res.headers;
-        return new Response(await res.arrayBuffer(), { status, headers });
+        // console.log(`${res.headers.get('content-length')} ${res.headers.get('content-type')}`)
+        return new Response(await res.blob(), { status: res.status, headers: res.headers });
     };
     if (!Promise.any) { //Polyfill,避免Promise.any不存在,无需关注
         Promise.any = function (promises) {
