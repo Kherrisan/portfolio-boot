@@ -97,9 +97,11 @@ const fetchParallellyAndCache = async (urls, req) => {
 const fullpath = (path) => {
     path = path.split('?')[0].split('#')[0]
     if (path.match(/\/$/)) {
+        // is index page
         path += 'index'
     }
-    if (!path.match(/\.[a-zA-Z]+$/)) {
+    if (!path.match(/\.[a-zA-Z0-9]+$/)) {
+        // if doesn't have file extension like .html, .js
         path += '.html'
     }
     return path
@@ -108,16 +110,18 @@ const fullpath = (path) => {
 const handle = async function (req) {
     let url = new URL(fullpath(req.url))
     if (!DOMAINS.includes(url.hostname)
-        || url.pathname.match(/\/sw\.js/g)) {
+        || url.pathname.match(/\/sw\.js/g)
+        || url.pathname.match('/va/script.js')) {
         return fetch(req)
+    }
+    if (url.pathname.match(/^\/api\//g)) {
+        // replace 'localhost:3000' or 'kendrickzou.com' with 'api.kendrickzou.com'
+        const apiUrl = url.href.replace(url.host, 'api.kendrickzou.com')
+        return fetch(new Request(apiUrl), {mode: 'no-cors'})
     }
     let urls
     if (url.pathname.match(/_next\/image/g)) {
-        const cdnUrl = decodeURIComponent(url.href.match(/url=(.+?)$/).at(1)).split('&')[0]
-        const imgName = cdnUrl.match(/[\w-]+\.(jpg|png|jpeg|webp|heic|avif)/g)[0]
-        const width = url.href.split(/[&=]/)[3]
-        const transImgName = `${imgName.split('.')[0]}-${width}.${imgName.split('.')[1]}`
-        urls = cdnList.map(cdn => cdnUrl.split('&')[0].replace(DEFAULT_IMG_CDN, cdn).replace(imgName, transImgName))
+        urls = cdnList.map(cdn => url.href.replace(DEFAULT_IMG_CDN, cdn))
     } else {
         const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
         urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}`)
@@ -136,7 +140,9 @@ const fetchParallelly = async (urls) => {
     let controller = new AbortController(); //针对此次请求新建一个AbortController,用于打断并发的其余请求
     const PauseProgress = async (res) => {
         //这个函数的作用时阻塞响应,直到主体被完整下载,避免被提前打断
-        return new Response(await (res).arrayBuffer(), { status: res.status, headers: res.headers });
+        const status = res.status;
+        const headers = res.headers;
+        return new Response(await res.arrayBuffer(), { status, headers });
     };
     if (!Promise.any) { //Polyfill,避免Promise.any不存在,无需关注
         Promise.any = function (promises) {
