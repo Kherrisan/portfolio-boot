@@ -123,8 +123,8 @@ const handle = async function (req) {
         url.pathname = url.pathname.replace('.html', '')
     }
     let urls
-    if (url.pathname.match(/\/image/g)) {
-        urls = cdnList.map(cdn => url.href.replace('https://www.kendrickzou.com/image', cdn))
+    if (url.pathname.match(/\/npm-images/g)) {
+        urls = cdnList.map(cdn => url.href.replace('https://www.kendrickzou.com/npm-images', cdn))
     } else {
         const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
         urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}`)
