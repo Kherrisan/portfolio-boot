@@ -90,6 +90,12 @@ const timeout = (ms) => {
 const fetchParallellyAndCache = async (urls, req) => {
     const resp = await fetchParallelly(urls, req)
     const cache = await caches.open(CACHE_NAME)
+
+    if (fullpath(req.url).match(/\.html$/)) {
+        const respCp = await generateHtml(resp)
+        cache.put(req, respCp.clone())
+        return respCp
+    }
     cache.put(req, resp.clone())
     return resp
 }
@@ -105,6 +111,16 @@ const fullpath = (path) => {
         path += '.html'
     }
     return path
+}
+
+const generateHtml = async (res) => {
+    return new Response(await res.blob(), {
+        headers: {
+            'content-type': 'text/html; charset=utf-8'
+        },
+        status: res.status,
+        statusText: res.statusText
+    })
 }
 
 const handle = async function (req) {
@@ -125,7 +141,7 @@ const handle = async function (req) {
     url = new URL(fullpath(req.url))
     let urls
     if (url.pathname.match(/\/npm-images/g)) {
-        urls = cdnList.map(cdn => url.href.replace('https://www.kendrickzou.com/npm-images', cdn))
+        urls = cdnList.map(cdn => url.href.replace(DEFAULT_IMG_CDN, cdn))
     } else {
         const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
         urls = cdnList.map(cdn => `${cdn}/${PORTFOLIO_PACKAGE_NAME}@${version}${url.pathname}`)
@@ -163,9 +179,7 @@ const fetchParallelly = async (urls, req) => {
                         reject(res)
                     }
                 })
-                .catch(err => {
-                    reject(err)
-                })
+                .catch(err => { })
         })
     }))
 }
