@@ -119,6 +119,9 @@ const handle = async function (req) {
         const apiUrl = url.href.replace(url.host, 'api.kendrickzou.com')
         return fetch(new Request(apiUrl), { mode: 'no-cors' })
     }
+    if (url.pathname.indexOf('.html.json')!==-1) {
+        url.pathname = url.pathname.replace('.html', '')
+    }
     let urls
     if (url.pathname.match(/_next\/image/g)) {
         urls = cdnList.map(cdn => url.href.replace(DEFAULT_IMG_CDN, cdn))
@@ -140,30 +143,10 @@ const fetchParallelly = async (urls, req) => {
     let controller = new AbortController(); //针对此次请求新建一个AbortController,用于打断并发的其余请求
     const PauseProgress = async (res) => {
         //这个函数的作用时阻塞响应,直到主体被完整下载,避免被提前打断
-        // console.log(`${res.headers.get('content-length')} ${res.headers.get('content-type')}`)
+        console.log(`${res.url}: ${res.headers.get('content-length')} ${res.headers.get('content-type')}`)
         return new Response(await res.blob(), { status: res.status, headers: res.headers });
     };
-    if (!Promise.any) { //Polyfill,避免Promise.any不存在,无需关注
-        Promise.any = function (promises) {
-            return new Promise((resolve, reject) => {
-                promises = Array.isArray(promises) ? promises : []
-                let len = promises.length
-                let errs = []
-                if (len === 0) return reject(new AggregateError('All promises were rejected'))
-                promises.forEach((promise) => {
-                    promise.then(value => {
-                        resolve(value)
-                    }, err => {
-                        len--
-                        errs.push(err)
-                        if (len === 0) {
-                            reject(new AggregateError(errs))
-                        }
-                    })
-                })
-            })
-        }
-    }
+
     //并发请求
     return Promise.any(urls.map(url => {
         return new Promise((resolve, reject) => {
