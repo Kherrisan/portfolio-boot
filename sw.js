@@ -119,12 +119,11 @@ const handle = async function (req) {
         const apiUrl = url.href.replace(url.host, 'api.kendrickzou.com')
         return fetch(new Request(apiUrl), { mode: 'no-cors' })
     }
-    if (url.pathname.indexOf('.html.json')!==-1) {
+    if (url.pathname.indexOf('.html.json') !== -1) {
         url.pathname = url.pathname.replace('.html', '')
     }
     let urls
     if (url.pathname.match(/\/image/g)) {
-        console.log(url.href)
         urls = cdnList.map(cdn => url.href.replace('https://www.kendrickzou.com/image', cdn))
     } else {
         const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
@@ -144,11 +143,10 @@ const fetchParallelly = async (urls, req) => {
     let controller = new AbortController(); //针对此次请求新建一个AbortController,用于打断并发的其余请求
     const PauseProgress = async (res) => {
         //这个函数的作用时阻塞响应,直到主体被完整下载,避免被提前打断
-        console.log(`${res.url}: ${res.headers.get('content-length')} ${res.headers.get('content-type')}`)
         return new Response(await res.blob(), { status: res.status, headers: res.headers });
     };
 
-    //并发请求
+    // 并发请求
     return Promise.any(urls.map(url => {
         return new Promise((resolve, reject) => {
             fetch(url, {
@@ -157,13 +155,16 @@ const fetchParallelly = async (urls, req) => {
                 .then(PauseProgress)//阻塞当前响应直到下载完成
                 .then(res => {
                     if (res.status == 200) {
-                        controller.abort()//打断其余响应(同时也打断了自己的,但本身自己已下载完成,打断无效)
-                        resolve(res)//返回
+                        // 打断其余响应(同时也打断了自己的,但本身自己已下载完成,打断无效)
+                        controller.abort()
+                        resolve(res)
                     } else {
                         reject(res)
                     }
                 })
-                .catch(err => { })
+                .catch(err => {
+                    reject(err)
+                })
         })
     }))
 }
