@@ -108,7 +108,7 @@ const fullpath = (path) => {
 }
 
 const handle = async function (req) {
-    let url = new URL(fullpath(req.url))
+    let url = new URL(req.url)
     if (!DOMAINS.includes(url.hostname)
         || url.pathname.match(/\/sw\.js/g)
         || url.pathname.match('/va/script.js')) {
@@ -122,6 +122,7 @@ const handle = async function (req) {
     if (url.pathname.indexOf('.html.json') !== -1) {
         url.pathname = url.pathname.replace('.html', '')
     }
+    url = new URL(fullpath(req.url))
     let urls
     if (url.pathname.match(/\/npm-images/g)) {
         urls = cdnList.map(cdn => url.href.replace('https://www.kendrickzou.com/npm-images', cdn))
