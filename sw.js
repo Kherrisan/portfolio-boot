@@ -123,11 +123,23 @@ const generateHtml = async (res) => {
     })
 }
 
+const shouldFetchParallelly = (req) => {
+    let url = new URL(req.url)
+    if (url.pathname.match(/\/sw\.js/g) || url.pathname.match('/va/script.js')) {
+        return false
+    }
+    for (let i = 0; i < cdnList.length; i++) {
+        if (url.origin === new URL(cdnList[i]).origin) {
+            // 是去往 NPM-CDN 的请求
+            return true
+        }
+    }
+    return DOMAINS.includes(url.hostname)
+}
+
 const handle = async function (req) {
     let url = new URL(req.url)
-    if (!DOMAINS.includes(url.hostname)
-        || url.pathname.match(/\/sw\.js/g)
-        || url.pathname.match('/va/script.js')) {
+    if (!shouldFetchParallelly(req)) {
         return fetch(req)
     }
     if (url.pathname.match(/^\/api\//g)) {
@@ -135,12 +147,12 @@ const handle = async function (req) {
         const apiUrl = url.href.replace(url.host, 'api.kendrickzou.com')
         return fetch(new Request(apiUrl), { mode: 'no-cors' })
     }
+    url = new URL(fullpath(req.url))
     if (url.pathname.indexOf('.html.json') !== -1) {
         url.pathname = url.pathname.replace('.html', '')
     }
-    url = new URL(fullpath(req.url))
     let urls
-    if (url.pathname.match(/\/npm-images/g)) {
+    if (url.pathname.match(/\/kendrickzou-portfolio-img/g)) {
         urls = cdnList.map(cdn => url.href.replace(DEFAULT_IMG_CDN, cdn))
     } else {
         const version = await db.read(VERSION_STORAGE_KEY) || DEFAULT_VERSION
