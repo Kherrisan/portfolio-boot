@@ -145,7 +145,12 @@ const handle = async function (req) {
     if (url.pathname.match(/^\/api\//g)) {
         // replace 'localhost:3000' or 'kendrickzou.com' with 'api.kendrickzou.com'
         const apiUrl = url.href.replace(url.host, 'api.kendrickzou.com')
-        return fetch(new Request(apiUrl), { mode: 'no-cors' })
+        let apiResp = await fetch(new Request(apiUrl), { mode: 'no-cors' })
+        return new Response(await apiResp.blob(), {
+            headers: apiResp.headers,
+            status: apiResp.status,
+            statusText: apiResp.statusText
+        })
     }
     url = new URL(fullpath(req.url))
     if (url.pathname.indexOf('.html.json') !== -1) {
