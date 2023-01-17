@@ -140,14 +140,12 @@ const shouldFetchParallelly = (req) => {
 const handle = async function (req) {
     let url = new URL(req.url)
     if (!shouldFetchParallelly(req)) {
-        return fetch(req, { mode: 'no-cors' })
+        return fetch(req)
     }
     if (url.pathname.match(/^\/api\//g)) {
         // replace 'localhost:3000' or 'kendrickzou.com' with 'api.kendrickzou.com'
-        const apiUrl = url.href.replace(url.host, 'api.kendrickzou.com')
-        let apiResp = await fetch(new Request(apiUrl, {mode: 'cors'}))
-        const apiBlob = await apiResp.blob()
-        return new Response(apiBlob, {
+        let apiResp = await fetch(url.href.replace(url.host, 'api.kendrickzou.com'))
+        return new Response(await apiResp.blob(), {
             headers: apiResp.headers,
             status: apiResp.status,
             statusText: apiResp.statusText
