@@ -142,6 +142,12 @@ const shouldFetchParallelly = (req) => {
 
 const handle = async function (req) {
     let url = new URL(req.url)
+    if (!DOMAINS.includes(url.hostname)) {
+        const headers = new Headers(req.headers)
+        headers.delete('origin')
+        headers.delete('referer')
+        req = new Request(req, { headers })
+    }
     if (!shouldFetchParallelly(req)) {
         const resp = await fetch(req)
         if (CACHABLE_DOMAIN.includes(url.hostname)) {
@@ -152,13 +158,11 @@ const handle = async function (req) {
     }
     if (url.pathname.match(/^\/api\//g)) {
         // replace 'localhost:3000' or 'kendrickzou.com' with 'api.kendrickzou.com'
-        const reqCp = new Request(url.href.replace(url.host, 'api.kendrickzou.com'), { mode: 'no-cors' })
-        reqCp.headers.delete('referer')
-        let apiResp = await fetch(reqCp)
-        return new Response(await apiResp.blob(), {
-            headers: apiResp.headers,
-            status: apiResp.status,
-            statusText: apiResp.statusText
+        const resp = await fetch(url.href.replace(url.host, 'api.kendrickzou.com'))
+        return new Response(await resp.blob(), {
+            headers: resp.headers,
+            status: resp.status,
+            statusText: resp.statusText
         })
     }
     url = new URL(fullpath(req.url))
