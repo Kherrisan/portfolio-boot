@@ -5,8 +5,14 @@ const PORTFOLIO_PACKAGE_NAME = "kendrickzou-portfolio"
 const PORTFOLIO_IMG_PACKAGE_NAME = "kendrickzou-portfolio-img"
 const VERSION_STORAGE_KEY = "kendrickzou-portfolio-version"
 const DEFAULT_IMG_CDN = 'https://cdn.bilicdn.tk/npm'
+const CACHABLE_DOMAIN = [
+    'i1.hdslb.com',
+    'kendrickzou.com',
+    'www.kendrickzou.com',
+    'cdn.bilicdn.tk/npm',
+    'rsms.me',
+]
 
-let cachelist = [];
 self.cons = {
     s: (m) => {
         console.log(`%c[SUCCESS]%c ${m}`, 'color:white;background:green;', '')
@@ -88,13 +94,10 @@ const timeout = (ms) => {
 }
 
 const fetchParallellyAndCache = async (urls, req) => {
-    const resp = await fetchParallelly(urls, req)
+    let resp = await fetchParallelly(urls, req)
     const cache = await caches.open(CACHE_NAME)
-
     if (fullpath(req.url).match(/\.html$/)) {
-        const respCp = await generateHtml(resp)
-        cache.put(req, respCp.clone())
-        return respCp
+        resp = await generateHtml(resp)
     }
     cache.put(req, resp.clone())
     return resp
@@ -140,11 +143,18 @@ const shouldFetchParallelly = (req) => {
 const handle = async function (req) {
     let url = new URL(req.url)
     if (!shouldFetchParallelly(req)) {
-        return fetch(req)
+        const resp = await fetch(req)
+        if (CACHABLE_DOMAIN.includes(url.hostname)) {
+            const cache = await caches.open(CACHE_NAME)
+            cache.put(req, resp.clone())
+            return resp
+        }
     }
     if (url.pathname.match(/^\/api\//g)) {
         // replace 'localhost:3000' or 'kendrickzou.com' with 'api.kendrickzou.com'
-        let apiResp = await fetch(url.href.replace(url.host, 'api.kendrickzou.com'))
+        const reqCp = new Request(url.href.replace(url.host, 'api.kendrickzou.com'), { mode: 'no-cors' })
+        reqCp.headers.delete('referer')
+        let apiResp = await fetch(reqCp)
         return new Response(await apiResp.blob(), {
             headers: apiResp.headers,
             status: apiResp.status,
