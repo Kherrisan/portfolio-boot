@@ -147,8 +147,8 @@ const handle = async function (req) {
         if (CACHABLE_DOMAIN.includes(url.hostname)) {
             const cache = await caches.open(CACHE_NAME)
             cache.put(req, resp.clone())
-            return resp
         }
+        return resp
     }
     if (url.pathname.match(/^\/api\//g)) {
         // replace 'localhost:3000' or 'kendrickzou.com' with 'api.kendrickzou.com'
