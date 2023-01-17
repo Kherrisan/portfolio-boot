@@ -142,14 +142,8 @@ const shouldFetchParallelly = (req) => {
 
 const handle = async function (req) {
     let url = new URL(req.url)
-    if (!DOMAINS.includes(url.hostname)) {
-        const headers = new Headers(req.headers)
-        headers.delete('origin')
-        headers.delete('referer')
-        req = new Request(req, { headers })
-    }
     if (!shouldFetchParallelly(req)) {
-        const resp = await fetch(req)
+        const resp = await fetch(req, { referrerPolicy: 'no-referrer' })
         if (CACHABLE_DOMAIN.includes(url.hostname)) {
             const cache = await caches.open(CACHE_NAME)
             cache.put(req, resp.clone())
