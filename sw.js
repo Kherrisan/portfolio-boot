@@ -140,7 +140,7 @@ const shouldFetchParallelly = (req) => {
 const handle = async function (req) {
     let url = new URL(req.url)
     if (!shouldFetchParallelly(req)) {
-        return fetch(req)
+        return fetch(req, { mode: 'no-cors' })
     }
     if (url.pathname.match(/^\/api\//g)) {
         // replace 'localhost:3000' or 'kendrickzou.com' with 'api.kendrickzou.com'
