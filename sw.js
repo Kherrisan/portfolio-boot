@@ -11,6 +11,7 @@ const CACHABLE_DOMAIN = [
     'www.kendrickzou.com',
     'cdn.bilicdn.tk/npm',
     'rsms.me',
+    'weibo.com',
 ]
 
 self.cons = {
