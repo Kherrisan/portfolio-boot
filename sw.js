@@ -197,7 +197,7 @@ const fetchParallelly = async (urls, req) => {
 
     // 并发请求
     return Promise.any(urls.map(url => {
-        return new Promise<Response>((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             // 设置打断点
             fetch(url, { signal: controller.signal })
                 .then(PauseProgress)//阻塞当前响应直到下载完成
