@@ -174,10 +174,17 @@ const handle = async function (req) {
     const resp = await caches.match(req)
     if (!!resp) {
         cons.i(`Cache hitted: ${req.url}`)
-        return resp;
+        return Promise.race([
+            async () => {
+                await timeout(200)
+                return resp
+            },
+            fetchParallellyAndCache(urls, req)
+        ])
+    } else {
+        cons.w(`Cache missed: ${req.url}`)
+        return fetchParallellyAndCache(urls, req)
     }
-    cons.w(`Cache missed: ${req.url}`)
-    return fetchParallellyAndCache(urls, req)
 }
 
 const fetchParallelly = async (urls, req) => {
@@ -190,10 +197,9 @@ const fetchParallelly = async (urls, req) => {
 
     // 并发请求
     return Promise.any(urls.map(url => {
-        return new Promise((resolve, reject) => {
-            fetch(url, {
-                signal: controller.signal//设置打断点
-            })
+        return new Promise<Response>((resolve, reject) => {
+            // 设置打断点
+            fetch(url, { signal: controller.signal })
                 .then(PauseProgress)//阻塞当前响应直到下载完成
                 .then(res => {
                     if (res.status == 200) {
